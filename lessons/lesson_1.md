@@ -10,164 +10,121 @@
 
 **Inheritance vs. Composition**: Inheritance models an "is-a" relationship (`AdminUser < User`). Composition models a "has-a" relationship by delegating to contained objects. Rails generally prefers composition because deep inheritance hierarchies become fragile and hard to test.
 
-### Demonstrate
+---
 
-Run these steps in your Rails app:
+### Setup
 
-**Step 1: Generate a Rails model**
+Run these commands in your Rails app to set up the domain:
+
+**Step 1: Configure the database**
+```bash
+bin/rails db:create
+```
+This creates `vault_development` and `vault_test` databases defined in `config/database.yml`.
+
+**Step 2: Generate the BankAccount model**
 ```bash
 bin/rails g model BankAccount balance:decimal
+bin/rails db:migrate
 ```
 
-What just happened?
-- `bin/rails` runs the Rails executable bundled with your project (via Bundler), ensuring the correct gem versions are loaded.
-- `g` is shorthand for `generate`.
-- `model BankAccount` tells Rails to create a model named `BankAccount`.
-- `balance:decimal` creates a migration with a `balance` column of type `decimal`.
+**Step 3: Adjust precision on the balance column**
+```bash
+bin/rails g migration ChangeBalancePrecisionInBankAccounts
+```
 
-Rails created:
-- `app/models/bank_account.rb` — the model class
-- `db/migrate/XXXXXXXXXX_create_bank_accounts.rb` — the migration file
+Edit the new migration to change the column:
+```ruby
+class ChangeBalancePrecisionInBankAccounts < ActiveRecord::Migration[8.1]
+  def change
+    change_column :bank_accounts, :balance, :decimal, precision: 10, scale: 2
+  end
+end
+```
 
-The generator defaults `decimal` to `precision: 10, scale: 2`, meaning 10 total digits with 2 after the decimal point. If you need different values, you edit the migration manually before running it.
-
-**Step 2: Apply the migration**
+Then run:
 ```bash
 bin/rails db:migrate
 ```
 
-What just happened?
-- Rails reads pending migration files in `db/migrate/` and runs them against your database.
-- Each migration has a timestamp in its filename. Rails tracks which migrations have already run in a table called `schema_migrations`.
-- `db:migrate` creates or alters tables in `vault_development` (your local database).
-
-**Step 3: Verify the column**
+Verify in the database console:
 ```bash
 bin/rails dbconsole
 ```
-Inside PostgreSQL, run:
 ```sql
 \d bank_accounts
 ```
-You should see a `balance` column of type `numeric(10,2)`. Exit with `\q`.
+You should see `balance` as `numeric(10,2)`. Exit with `\q`.
 
-**Step 4: Edit the model to enforce encapsulation**
-Edit `app/models/bank_account.rb`:
-```ruby
-class BankAccount < ApplicationRecord
-  def deposit(amount)
-    raise ArgumentError, "Amount must be positive" if amount <= 0
-    self.balance = (balance || 0) + amount
-  end
-
-  def withdraw(amount)
-    raise ArgumentError, "Amount must be positive" if amount <= 0
-    raise InsufficientFunds, "Balance too low" if amount > balance.to_d
-    self.balance = balance - amount
-  end
-end
-```
-
-What just happened?
-- We removed the ability to set `balance` directly from outside the class.
-- `deposit` and `withdraw` are the only public interfaces for changing the balance.
-- `ArgumentError` guards against invalid input (negative amounts).
-- `InsufficientFunds` is a custom error class we'll define next.
-- `to_d` converts the decimal to a `BigDecimal` for precise comparison.
-
-Create `app/models/errors/insufficient_funds.rb`:
-```ruby
-class InsufficientFunds < StandardError; end
-```
-
-**Step 5: Create a `Notifiable` module showing polymorphism**
-```ruby
-# app/models/concerns/notifiable.rb
-module Notifiable
-  extend ActiveSupport::Concern
-
-  included do
-    has_many :notifications, as: :notifiable
-  end
-
-  def notify(message)
-    raise NotImplementedError, "Each model must implement #notify"
-  end
-end
-```
-
-What just happened?
-- `ActiveSupport::Concern` is a Rails helper for clean mixin modules.
-- The `included` block runs when the module is included in a class, setting up the `has_many` association.
-- `notify` raises `NotImplementedError` by default. Each including class must override it.
-
-Include it in models:
-```ruby
-# app/models/article.rb
-class Article < ApplicationRecord
-  include Notifiable
-
-  def notify(message)
-    Notification.create!(notifiable: self, message: "Article update: #{message}")
-  end
-end
-
-# app/models/video.rb
-class Video < ApplicationRecord
-  include Notifiable
-
-  def notify(message)
-    Notification.create!(notifiable: self, message: "Video alert: #{message}")
-  end
-end
-```
-
-What just happened?
-- Both `Article` and `Video` respond to `notify`, but each formats the message differently.
-- This is polymorphism: same interface (`notify`), different behavior.
-
-**Step 6: Illustrate composition over inheritance with a `Profile` value object**
-```ruby
-# app/models/profile.rb
-class Profile
-  attr_reader :first_name, :last_name, :address
-
-  def initialize(first_name:, last_name:, address:)
-    @first_name = first_name
-    @last_name = last_name
-    @address = address
-  end
-
-  def full_name
-    "#{first_name} #{last_name}"
-  end
-end
-```
-
-```ruby
-# app/models/customer.rb
-class Customer < ApplicationRecord
-  def profile
-    @profile ||= Profile.new(
-      first_name: first_name,
-      last_name: last_name,
-      address: address
-    )
-  end
-end
-```
-
-What just happened?
-- `Profile` is a value object: it represents a concept (`first_name`, `last_name`, `address`) without its own database table.
-- `Customer` "has a" `Profile` instead of inheriting from a `User` class.
-- `@profile ||= ...` memoizes the object so it's only built once per instance.
-- This is composition: we delegate the name logic to `Profile` rather than stuffing it into `Customer` or building a deep inheritance chain.
+---
 
 ### Practice
 
-1. **Encapsulation**: In `BankAccount`, ensure `balance` cannot be modified directly—only via `deposit(amount)` and `withdraw(amount)`. Raise an error on invalid operations.
-2. **Polymorphism**: Create a `Renderable` module with a `render` method. Include it in `Article` and `Video` so both respond to `render` but return different output (HTML vs. embed code).
-3. **Composition vs. Inheritance**: Refactor a `Customer` model that currently inherits from `User` into a composition pattern using a `Profile` value object. Add a comment explaining why this is preferable for your domain.
+**Task 1: Encapsulation**
+
+Goal: Make `BankAccount` enforce that `balance` can only change through `deposit` and `withdraw`.
+
+Requirements:
+- `deposit(amount)` — adds a positive amount to the balance
+- `withdraw(amount)` — subtracts a positive amount if funds are available
+- Both methods must raise `ArgumentError` for invalid input (zero or negative amounts)
+- `withdraw` must raise `InsufficientFunds` if the amount exceeds the balance
+- `balance` must not be writable from outside the class
+
+Hints:
+- You'll need a custom error class. Create `app/models/errors/insufficient_funds.rb`:
+  ```ruby
+  class InsufficientFunds < StandardError; end
+  ```
+- Use `private` to hide the `balance=` writer method.
+- Use `BigDecimal` for precise decimal arithmetic. Convert with `BigDecimal(amount)` and `BigDecimal(balance || 0)`.
+- New accounts have `nil` balance, so handle that with `|| 0`.
+
+Implement this in `app/models/bank_account.rb`.
 
 ---
-*Progress through these tasks and reply when complete for review.*
+
+**Task 2: Polymorphism**
+
+Goal: Create a `Notifiable` module that multiple models can include, each responding to `notify(message)` in its own way.
+
+Requirements:
+- Create `app/models/concerns/notifiable.rb`
+- Use `ActiveSupport::Concern` to define the module
+- Include a default `notify(message)` that raises `NotImplementedError`
+- Include the module in two models (e.g., `Article` and `Video`) and override `notify` in each so they behave differently
+
+Hints:
+- `ActiveSupport::Concern` gives you an `included` block for setting up associations when the module is included
+- The whole point is that both models respond to the same method (`notify`) but produce different behavior — that's polymorphism
+
+---
+
+**Task 3: Composition over Inheritance**
+
+Goal: Replace an inheritance relationship with a value object.
+
+Imagine this problematic inheritance setup:
+```ruby
+class Customer < User
+end
+```
+`Customer` inherits everything from `User` even though it only needs name and address fields. This is fragile: changes to `User` break `Customer`, and testing becomes complicated.
+
+Refactor it to use composition instead.
+
+Requirements:
+- Create `app/models/profile.rb` as a plain Ruby value object with `first_name`, `last_name`, and `address`
+- Create or update `app/models/customer.rb` to use `Profile` instead of inheriting from `User`
+- `Customer#profile` should build a `Profile` from its own attributes and memoize it with `@profile ||=`
+
+Hints:
+- `Profile` does not inherit from `ApplicationRecord` — it's just a plain Ruby class
+- Use `attr_reader` for read-only attributes
+- Memoization (`@profile ||=`) ensures the object is only built once per instance
+
+Add a comment in `customer.rb` explaining why composition is preferable here.
+
+---
+
+*Complete each task and reply for review.*
