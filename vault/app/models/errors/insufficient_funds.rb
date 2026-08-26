@@ -1,2 +1,4 @@
 # vault/app/models/errors/insufficient_funds.rb
-class InsufficientFunds < StandardError; end
+module Errors
+  class InsufficientFunds < StandardError; end
+end

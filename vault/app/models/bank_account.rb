@@ -6,17 +6,21 @@ class BankAccount < ApplicationRecord
     amount_big = BigDecimal(amount)
     balance_big = BigDecimal(balance || 0)
 
-    raise ArgumentError, "Amount cannot be negative" if amount.negative?
+    if amount_big <= 0
+      raise ArgumentError, "Amount cannot be negative"
+    end
 
     self.balance = balance_big + amount_big
   end
 
   def withdraw(amount)
-    amount_big = BigDecimal(amount)
+    amount_big = BigDecimal(amount.to_s)
     balance_big = BigDecimal(balance || 0)
 
-    raise ArgumentError, "Amount cannot be negative" if amount.negative?
-    raise InsufficientFunds, "Amount must not exceed balance" if amount_big > balance_big
+    if amount_big <= 0
+      raise ArgumentError, "Amount cannot be negative"
+    end
+    raise Errors::InsufficientFunds, "Amount must not exceed balance" if amount_big > balance_big
 
     self.balance = balance_big - amount_big
   end
