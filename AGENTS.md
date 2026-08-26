@@ -1,5 +1,15 @@
 # Project Agents and Instructions
 
+## Workspace Layout
+
+- Project root: `/Users/nicorithner/coding_repos/learning/RoR/`
+- Rails app lives in: `/Users/nicorithner/coding_repos/learning/RoR/vault/`
+- Lesson files live in: `/Users/nicorithner/coding_repos/learning/RoR/lessons/`
+- VSCode workspace root: `vault/` (opened from inside `vault/`, not the parent)
+- Rails commands (`bin/rails`, `bundle install`, `bin/rails spec`) must run from `vault/`
+- Always use absolute paths when reading/writing files: `/Users/nicorithner/coding_repos/learning/RoR/vault/...`
+- Do not look for `.vscode/`, `Gemfile`, `config/`, or `app/` in the parent directory — they are in `vault/`
+
 ## Lesson Writer
 
 When writing or updating lessons in `lessons/lesson_<number>.md`, follow these rules:
