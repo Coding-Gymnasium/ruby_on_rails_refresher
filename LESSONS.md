@@ -331,9 +331,10 @@ Stage 1 uses Rails 8 native tooling (Solid Queue, Solid Cache). Stage 2 intentio
 **Focus: Production-grade async processing**
 
 - Sidekiq setup and Redis configuration
+- Redis as Sidekiq's backing store: queues, retry sets, dead jobs, scheduled jobs
 - Jobs: `SendQuoteNotification`, `RemindTeamOfJob`, `GenerateDailyReport`
-- Sidekiq UI and monitoring
-- Retry strategies and dead-set handling
+- Bank account domain example: `GenerateMonthlyStatementJob` — idempotent statement generation with `retry_on`/`discard_on`, queue priority, and `deliver_later` for email
+- Sidekiq Web UI and monitoring
 - Testing Sidekiq jobs with `rspec-sidekiq`
 - When to use Solid Queue vs. Sidekiq in your own decisions
 
