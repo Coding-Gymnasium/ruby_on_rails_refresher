@@ -2,10 +2,17 @@
 
 require "rails_helper"
 
-RSpec.describe BankAccount do
+RSpec.describe BankAccount, type: :model do
+  describe "Relations" do
+    it { should belong_to(:customer) }
+    it { should have_many(:transactions) }
+  end
+
+
   describe "Bank account activities" do
     before do
-      @account = BankAccount.create!
+      @customer = Customer.create!
+      @account = BankAccount.create!(customer: @customer)
     end
     it "A Bank account starts with a nil balance" do
       expect(@account.balance).to be_nil
@@ -34,6 +41,29 @@ RSpec.describe BankAccount do
     it "Negative withdrawal throws ArgumentError" do
       expect { @account.withdraw(-5)  }.to raise_error(ArgumentError)
       expect { @account.withdraw(0)  }.to raise_error(ArgumentError)
+    end
+  end
+
+  describe "Bank account transactions" do
+    before do
+      @customer = Customer.create!
+      @account = BankAccount.create!(customer: @customer)
+    end
+
+    it "has many transactions" do
+      3.times do
+        @account.transactions.create!(amount: 50, transaction_type: "deposit")
+      end
+      expect(@account.transactions.length).to eq(3)
+    end
+
+    it "recalculates balance after withdrawal" do
+      @account.deposit(50)
+      transaction = @account.transactions.create!(amount: 50, transaction_type: "deposit")
+      orig_balance = @account.balance
+      expect(orig_balance).to eq(BigDecimal("50.00"))
+      @account.transactions.destroy(transaction)
+      expect(@account.balance).to eq(BigDecimal("0.00"))
     end
   end
 end

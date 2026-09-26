@@ -10,14 +10,16 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_24_013302) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_31_223255) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
   create_table "bank_accounts", force: :cascade do |t|
     t.decimal "balance", precision: 10, scale: 2
     t.datetime "created_at", null: false
+    t.bigint "customer_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["customer_id"], name: "index_bank_accounts_on_customer_id"
   end
 
   create_table "customers", force: :cascade do |t|
@@ -27,4 +29,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_24_013302) do
     t.string "last_name"
     t.datetime "updated_at", null: false
   end
+
+  create_table "transactions", force: :cascade do |t|
+    t.decimal "amount"
+    t.bigint "bank_account_id", null: false
+    t.datetime "created_at", null: false
+    t.string "transaction_type"
+    t.datetime "updated_at", null: false
+    t.index ["bank_account_id"], name: "index_transactions_on_bank_account_id"
+  end
+
+  add_foreign_key "bank_accounts", "customers"
+  add_foreign_key "transactions", "bank_accounts"
 end
