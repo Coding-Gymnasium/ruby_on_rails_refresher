@@ -29,3 +29,9 @@ After the user completes a task:
 2. Give specific, technical feedback
 3. Point out issues and explain why they matter
 4. Provide corrected code only in review, never in the lesson file itself
+
+## Change Management
+
+- Do not auto-approve file changes without permission
+- Always ask before making edits to existing files
+- Wait for explicit approval before writing or modifying any code
