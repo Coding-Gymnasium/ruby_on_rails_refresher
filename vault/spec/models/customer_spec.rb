@@ -10,7 +10,12 @@ RSpec.describe Customer do
 
   describe "Customer" do
     before :each do
-      @customer = Customer.create!
+      @customer = Customer.create!(
+        first_name: "Alice",
+        last_name: "Smith",
+        address: "123 Main St",
+        email: "Alice@Example.com"
+        )
       @bank_account = BankAccount.create!(customer: @customer)
     end
 
@@ -33,8 +38,27 @@ RSpec.describe Customer do
       end
 
       it "returns argument error when trying to assign an account to another customer" do
-        customer_two = Customer.create!
+        customer_two = Customer.new(
+          first_name: "Bob",
+          last_name: "Jones",
+          address: "456 Oak Ave",
+          email: "bob@example.com"
+        )
         expect { customer_two.bank_accounts << @bank_account }.to raise_error ArgumentError
+      end
+    end
+
+    describe "Customer email" do
+      it "saving an email is case insensitive" do
+        duplicate = Customer.new(
+          first_name: "Alice",
+          last_name: "Jones",
+          address: "456 Oak Ave",
+          email: "alice@example.com"
+        )
+
+        expect(duplicate).not_to be_valid
+        expect(Customer.count).to eq(1)
       end
     end
   end

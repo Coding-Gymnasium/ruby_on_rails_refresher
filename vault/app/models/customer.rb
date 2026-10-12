@@ -4,6 +4,8 @@ class Customer < ApplicationRecord
     before_add: :prevent_duplicate_bank_account
   has_many :transactions, through: :bank_accounts
 
+  validates :email, presence: true, uniqueness: { case_sensitive: false }
+
   # Using composition instead of inheritance from a domain superclass like User.
   # Profile encapsulates identity behavior in one place, keeping Customer focused
   # on its own responsibilities and avoiding a fragile inheritance chain.

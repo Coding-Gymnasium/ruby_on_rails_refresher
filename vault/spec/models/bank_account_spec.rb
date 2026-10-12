@@ -11,7 +11,12 @@ RSpec.describe BankAccount, type: :model do
 
   describe "Bank account activities" do
     before do
-      @customer = Customer.create!
+      @customer = Customer.create!(
+        first_name: "Alice",
+        last_name: "Smith",
+        address: "123 Main St",
+        email: "Alice@Example.com"
+        )
       @account = BankAccount.create!(customer: @customer)
     end
     it "A Bank account starts with a nil balance" do
@@ -46,7 +51,12 @@ RSpec.describe BankAccount, type: :model do
 
   describe "Bank account transactions" do
     before do
-      @customer = Customer.create!
+      @customer = Customer.create!(
+        first_name: "Alice",
+        last_name: "Smith",
+        address: "123 Main St",
+        email: "Alice@Example.com"
+  )
       @account = BankAccount.create!(customer: @customer)
     end
 
